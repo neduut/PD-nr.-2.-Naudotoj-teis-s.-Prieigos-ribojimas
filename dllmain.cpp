@@ -10,9 +10,12 @@
 #include <algorithm>
 
 
-// Timing variables
+// timing variables
 static std::chrono::high_resolution_clock::time_point g_startTime;
 static std::chrono::high_resolution_clock::time_point g_endTime;
+
+static const std::string SURNAME = "Davidaviciute";
+static const std::string NAME = "Neda";
 
 
 extern "C" __declspec(dllexport) void StartTimer()
@@ -44,52 +47,68 @@ extern "C" __declspec(dllexport) int SetUserTimeRestriction(const char* username
     return system(cmd.c_str());
 }
 
+// helper functions to generate folder and file paths
+static std::vector<std::string> GetWorkFolderPaths()
+{
+    std::vector<std::string> folders;
+
+    folders.push_back(SURNAME);
+
+    for (int i = 1; i <= 3; i++)
+    {
+        std::string level1 = SURNAME + "\\" + NAME + std::to_string(i);
+        folders.push_back(level1);
+
+        for (int j = 1; j <= 3; j++)
+        {
+            std::string level2 = level1 + "\\" + NAME + std::to_string(i) + SURNAME + std::to_string(j);
+            folders.push_back(level2);
+        }
+    }
+
+    return folders;
+}
+
+static std::vector<std::string> GetWorkFilePaths()
+{
+    std::vector<std::string> files;
+
+    for (int i = 1; i <= 3; i++)
+    {
+        std::string level1 = SURNAME + "\\" + NAME + std::to_string(i);
+
+        for (int j = 1; j <= 3; j++)
+        {
+            std::string path = level1 + "\\" + NAME + std::to_string(i) + SURNAME + std::to_string(j) + "\\data.txt";
+            files.push_back(path);
+        }
+    }
+
+    return files;
+}
+
 extern "C" __declspec(dllexport) int CreateWorkFolders()
 {
     int result = 0;
+    std::vector<std::string> folders = GetWorkFolderPaths();
 
-    result += system("mkdir Davidaviciute");
-    result += system("mkdir Davidaviciute\\Neda1");
-    result += system("mkdir Davidaviciute\\Neda2");
-    result += system("mkdir Davidaviciute\\Neda3");
-
-    result += system("mkdir Davidaviciute\\Neda1\\Neda1Davidaviciute1");
-    result += system("mkdir Davidaviciute\\Neda1\\Neda1Davidaviciute2");
-    result += system("mkdir Davidaviciute\\Neda1\\Neda1Davidaviciute3");
-
-    result += system("mkdir Davidaviciute\\Neda2\\Neda2Davidaviciute1");
-    result += system("mkdir Davidaviciute\\Neda2\\Neda2Davidaviciute2");
-    result += system("mkdir Davidaviciute\\Neda2\\Neda2Davidaviciute3");
-
-    result += system("mkdir Davidaviciute\\Neda3\\Neda3Davidaviciute1");
-    result += system("mkdir Davidaviciute\\Neda3\\Neda3Davidaviciute2");
-    result += system("mkdir Davidaviciute\\Neda3\\Neda3Davidaviciute3");
+    for (const auto& folder : folders)
+    {
+        std::string cmd = "mkdir \"" + folder + "\"";
+        result += system(cmd.c_str());
+    }
 
     return result;
 }
 
 extern "C" __declspec(dllexport) int CreateWorkFiles()
 {
-    const char* files[] =
-    {
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute3\\data.txt"
-    };
-
+    std::vector<std::string> files = GetWorkFilePaths();
     int created = 0;
 
-    for (int i = 0; i < 9; i++)
+    for (const auto& path : files)
     {
-        std::ofstream file(files[i], std::ios::trunc);
+        std::ofstream file(path, std::ios::trunc);
         if (!file.is_open())
             return -1;
 
@@ -102,34 +121,22 @@ extern "C" __declspec(dllexport) int CreateWorkFiles()
 
 extern "C" __declspec(dllexport) int ClearWorkFiles()
 {
-    const char* files[] =
+    std::vector<std::string> files = GetWorkFilePaths();
+
+    for (const auto& path : files)
     {
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute3\\data.txt"
-    };
-
-    for (int i = 0; i < 9; i++)
-    {
-        std::ofstream file(files[i], std::ios::trunc);
+        std::ofstream file(path, std::ios::trunc);
         if (!file.is_open())
             return -1;
     }
 
-    return 9;
+    return static_cast<int>(files.size());
 }
 
 extern "C" __declspec(dllexport) int DeleteWorkFolders()
 {
-    return system("rmdir /s /q Davidaviciute");
+    std::string cmd = "rmdir /s /q \"" + SURNAME + "\"";
+    return system(cmd.c_str());
 }
 
 extern "C" __declspec(dllexport)
@@ -140,20 +147,7 @@ long long CalculateTschirnhausenAndWrite(
     double x_step
 )
 {
-    const char* files[] =
-    {
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute3\\data.txt"
-    };
+    std::vector<std::string> files = GetWorkFilePaths();
 
     std::ofstream ofs[9];
     for (int i = 0; i < 9; ++i)
@@ -161,8 +155,9 @@ long long CalculateTschirnhausenAndWrite(
         ofs[i].open(files[i], std::ios::app);
         if (!ofs[i].is_open())
             return -1;
+
         ofs[i].setf(std::ios::fixed);
-        ofs[i].precision(8); // or 12 if you need more digits
+        ofs[i].precision(8);
     }
 
     std::string buffers[9];
@@ -239,24 +234,10 @@ struct Point {
 
 extern "C" __declspec(dllexport) int MergeFilesForF(double F)
 {
-    const char* files[] =
-    {
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda1\\Neda1Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda2\\Neda2Davidaviciute3\\data.txt",
-
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute1\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute2\\data.txt",
-        "Davidaviciute\\Neda3\\Neda3Davidaviciute3\\data.txt"
-    };
-
     std::vector<Point> allPoints;
+    std::vector<std::string> files = GetWorkFilePaths();
 
-    // 1 & 2. Read all files and store the points
+    // 1 & 2 read all files and store the points
     for (int i = 0; i < 9; ++i)
     {
         std::ifstream ifs(files[i]);
@@ -271,10 +252,10 @@ extern "C" __declspec(dllexport) int MergeFilesForF(double F)
         ifs.close();
     }
 
-    // 3. Sort points according to requirements
+    // 3.sort points according to requirements
     std::sort(allPoints.begin(), allPoints.end());
 
-    // 4. Construct output filename based on F
+    // 4. construct output filename based on F
     std::string outFilename = "result_F_";
     if (F < 0.0)
     {
@@ -287,7 +268,7 @@ extern "C" __declspec(dllexport) int MergeFilesForF(double F)
     }
     outFilename += ".txt";
 
-    // Write all sorted points into the output file
+    // write all sorted points into the output file
     std::ofstream ofs(outFilename, std::ios::trunc);
     if (!ofs.is_open())
         return -1;
@@ -302,6 +283,9 @@ extern "C" __declspec(dllexport) int MergeFilesForF(double F)
 
     ofs.close();
 
-    // 5. Return the number of merged points
+    // clear intermediate files
+    ClearWorkFiles();
+
+    // 5. return the number of merged points
     return static_cast<int>(allPoints.size());
 }
