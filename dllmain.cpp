@@ -6,10 +6,14 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <vector>
+#include <algorithm>
+
 
 // Timing variables
 static std::chrono::high_resolution_clock::time_point g_startTime;
 static std::chrono::high_resolution_clock::time_point g_endTime;
+
 
 extern "C" __declspec(dllexport) void StartTimer()
 {
@@ -217,4 +221,87 @@ long long CalculateTschirnhausenAndWrite(
     }
 
     return pointCount;
+}
+
+// Helper structure to store and sort the points
+struct Point {
+    double x;
+    double y;
+
+    // Sorting logic: prioritize x ascending, then y ascending if x is equal
+    bool operator<(const Point& other) const {
+        if (x != other.x) {
+            return x < other.x;
+        }
+        return y < other.y;
+    }
+};
+
+extern "C" __declspec(dllexport) int MergeFilesForF(double F)
+{
+    const char* files[] =
+    {
+        "Davidaviciute\\Neda1\\Neda1Davidaviciute1\\data.txt",
+        "Davidaviciute\\Neda1\\Neda1Davidaviciute2\\data.txt",
+        "Davidaviciute\\Neda1\\Neda1Davidaviciute3\\data.txt",
+
+        "Davidaviciute\\Neda2\\Neda2Davidaviciute1\\data.txt",
+        "Davidaviciute\\Neda2\\Neda2Davidaviciute2\\data.txt",
+        "Davidaviciute\\Neda2\\Neda2Davidaviciute3\\data.txt",
+
+        "Davidaviciute\\Neda3\\Neda3Davidaviciute1\\data.txt",
+        "Davidaviciute\\Neda3\\Neda3Davidaviciute2\\data.txt",
+        "Davidaviciute\\Neda3\\Neda3Davidaviciute3\\data.txt"
+    };
+
+    std::vector<Point> allPoints;
+
+    // 1 & 2. Read all files and store the points
+    for (int i = 0; i < 9; ++i)
+    {
+        std::ifstream ifs(files[i]);
+        if (!ifs.is_open())
+            continue;
+
+        double x, y;
+        while (ifs >> x >> y)
+        {
+            allPoints.push_back({ x, y });
+        }
+        ifs.close();
+    }
+
+    // 3. Sort points according to requirements
+    std::sort(allPoints.begin(), allPoints.end());
+
+    // 4. Construct output filename based on F
+    std::string outFilename = "result_F_";
+    if (F < 0.0)
+    {
+        outFilename += "minus_";
+        outFilename += std::to_string(static_cast<int>(std::round(-F)));
+    }
+    else
+    {
+        outFilename += std::to_string(static_cast<int>(std::round(F)));
+    }
+    outFilename += ".txt";
+
+    // Write all sorted points into the output file
+    std::ofstream ofs(outFilename, std::ios::trunc);
+    if (!ofs.is_open())
+        return -1;
+
+    ofs.setf(std::ios::fixed);
+    ofs.precision(8); // keeping consistency with write function
+
+    for (const auto& pt : allPoints)
+    {
+        ofs << pt.x << " " << pt.y << "\n";
+    }
+
+    ofs.close();
+
+    // 5. Return the number of merged points
+    return static_cast<int>(allPoints.size());
 }
